@@ -10,13 +10,13 @@ A pair of bash scripts for macOS that work together to **rename** and **organise
 ## 🎯 Workflow
 
 ```
-Original Files              After Renaming              After Organising
---------------              --------------              ----------------
-IMG_1234.jpg        →      20231018_143045.jpg   →     2023/
-DSC_5678.HEIC       →      20231018_150230.HEIC  →       2023-10 October/
-Image.jpeg          →      20231018_143045(1).jpg        └─ 20231018_143045.jpg
-                                                          └─ 20231018_143045(1).jpg
-                                                          └─ 20231018_150230.HEIC
+Original Files              After Renaming                        After Organising
+--------------              --------------                        ----------------
+IMG_1234.jpg        →      20251018_142006_IMG_1234.jpg   →     2023/
+DSCF5678.RAF        →      20230625_114810_DSCF5678.RAF   →       2023-10 October/
+photo.heic          →      20251018_142006_photo.heic            └─ 20251018_142006_IMG_1234.jpg
+                                                                  └─ 20230625_114810_DSCF5678.RAF
+                                                                  └─ 20251018_142006_photo.heic
 ```
 
 ## 📋 Prerequisites
@@ -38,15 +38,17 @@ Can be extended to support other media types, if those types are readable by Exi
 
 ## 🔧 Script 1: `rename_images_by_date.sh`
 
-Renames image files to format `YYYYMMDD_hhmmss.<extension>` based on EXIF **DateTimeOriginal** with timezone offset support.
+Renames image files by prepending `YYYYMMDD_hhmmss_` to the original filename, based on EXIF **DateTimeOriginal** with timezone offset support. This preserves the original filename whilst adding chronological organisation.
 
 ### Features
 
 ✅ **Timezone-aware renaming** - Uses `OffsetTimeOriginal` to display local capture time  
+✅ **Preserves original filenames** - Prepends timestamp without replacing filename  
+✅ **Idempotent operation** - Files already with timestamps are skipped  
 ✅ **Dry-run mode** - Preview changes before applying  
 ✅ **Duplicate handling** - Adds incremental suffixes `(1)`, `(2)`, etc.  
 ✅ **Recursive processing** - Scans all subdirectories  
-✅ **JPEG & HEIC support** - Works with iOS and Android Images  
+✅ **Multiple format support** - JPEG, HEIC, RAF, MOV  
 
 ### Usage
 
@@ -88,6 +90,19 @@ OPTIONS:
 ./rename_images_by_date.sh ~/Pictures
 ```
 
+### Renaming Behaviour
+
+The script **prepends** the timestamp to the existing filename:
+- `IMG_1234.jpg` → `20251018_142006_IMG_1234.jpg`
+- `DSCF0975.RAF` → `20230625_114810_DSCF0975.RAF`
+- `photo.heic` → `20251018_142006_photo.heic`
+
+**Files already starting with timestamps are skipped:**
+- `20251018_142006_photo.jpg` → *(no change, already renamed)*
+- `20251018_142006(1).jpg` → *(no change, already renamed)*
+
+This makes the script **idempotent** - running it multiple times won't cause unwanted changes.
+
 ### How Timezone Handling Works
 
 1. Reads `DateTimeOriginal` (e.g., `2023:10:18 14:30:45`)
@@ -98,11 +113,14 @@ OPTIONS:
 **Example:**
 - Photo taken in Tokyo (UTC+9) at 14:30 local time
 - EXIF: `DateTimeOriginal: 2023:10:18 14:30:45`, `OffsetTimeOriginal: +09:00`
-- Result: `20231018_143045.jpg` (local Tokyo time preserved)
+- Result: `20231018_143045_<original_filename>.jpg` (local Tokyo time preserved)
 
 ### What Gets Skipped
 
-Files without `DateTimeOriginal` EXIF data are skipped with a warning message.
+- Files without `DateTimeOriginal` EXIF data
+- Files already starting with `YYYYMMDD_HHMMSS` timestamp pattern
+
+Both display `[SKIP]` messages with reasons.
 
 ---
 
@@ -151,7 +169,7 @@ OPTIONS:
 
 ### Expected Filename Format
 
-Files must start with: `YYYYMMDD_HHMMSS` (e.g., `20231018_143045.jpg`)
+Files must start with: `YYYYMMDD_HHMMSS` (e.g., `20231018_143045_IMG_1234.jpg`)
 
 This matches the output format of `rename_images_by_date.sh`.
 
@@ -161,14 +179,14 @@ This matches the output format of `rename_images_by_date.sh`.
 ~/Photos/
 ├── 2023/
 │   ├── 2023-09 September/
-│   │   ├── 20230915_120000.jpg
-│   │   └── 20230920_143000.heic
+│   │   ├── 20230915_120000_photo.jpg
+│   │   └── 20230920_143000_IMG_5678.heic
 │   └── 2023-10 October/
-│       ├── 20231018_143045.jpg
-│       └── 20231018_150230.heic
+│       ├── 20231018_143045_DSCF0123.RAF
+│       └── 20231018_150230_vacation.heic
 └── 2024/
     └── 2024-01 January/
-        └── 20240101_000000.jpg
+        └── 20240101_000000_newyear.jpg
 ```
 
 ### Duplicate Handling
@@ -180,7 +198,7 @@ This matches the output format of `rename_images_by_date.sh`.
    - With `--delete-source`: Deletes source file, keeps destination
 
 2. **Files differ (different content)**:
-   - Renames with incremental suffix: `20231018_143045 (1).jpg`
+   - Renames with incremental suffix: `20231018_143045_IMG_1234 (1).jpg`
 
 ---
 
@@ -201,7 +219,7 @@ This matches the output format of `rename_images_by_date.sh`.
 ```
 
 **Before:** `IMG_1234.HEIC`, `IMG_1235.jpg`  
-**After:** `20231018_143045.HEIC`, `20231018_150230.jpg`
+**After:** `20231018_143045_IMG_1234.HEIC`, `20231018_150230_IMG_1235.jpg`
 
 ### Step 3: Organise into library
 ```bash
@@ -220,8 +238,8 @@ This matches the output format of `rename_images_by_date.sh`.
 ~/Photos/
 └── 2023/
     └── 2023-10 October/
-        ├── 20231018_143045.HEIC
-        └── 20231018_150230.jpg
+        ├── 20231018_143045_IMG_1234.HEIC
+        └── 20231018_150230_IMG_1235.jpg
 ```
 
 ---
@@ -255,14 +273,9 @@ Always run with `--dry-run` first to preview changes before modifying your files
 - Check the output for `[SKIP]` messages
 
 ### Video Files
-Whilst ExifTool supports video files (MOV, MP4), the current scripts focus on images. To add video support:
+Whilst ExifTool supports video files (MOV, MP4), the current `rename_images_by_date.sh` script includes `.mov` but not `.mp4`. Videos use `QuickTime:CreateDate` or `Keys:CreationDate` instead of `DateTimeOriginal`.
 
-1. In `rename_images_by_date.sh`, modify the `find` command:
-   ```bash
-   find "$DIRECTORY" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.heic" -o -iname "*.mov" \) -print0
-   ```
-
-2. Note: Videos use `QuickTime:CreateDate` or `Keys:CreationDate` instead of `DateTimeOriginal`
+To extend support, modify the `find` command in the script to include additional file types.
 
 ---
 
@@ -293,6 +306,7 @@ Check that:
 1. Files have EXIF `DateTimeOriginal` data: `exiftool -DateTimeOriginal image.jpg`
 2. You're not in `--dry-run` mode
 3. The script has write permissions to the directory
+4. Files don't already start with timestamp pattern
 
 ---
 
