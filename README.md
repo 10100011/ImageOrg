@@ -13,10 +13,10 @@ A pair of bash scripts for macOS that work together to **rename** and **organise
 Original Files              After Renaming                        After Organising
 --------------              --------------                        ----------------
 IMG_1234.jpg        →      20251018_142006_IMG_1234.jpg   →     2025/
-DSCF5678.RAF        →      20250625_114810_DSCF5678.RAF   →     └── 2025-06 June/
-photo.heic          →      20251018_142006_photo.heic     →         └── 20250625_114810_DSCF5678.RAF
+DSCF5678.RAF        →      20250625_114810_DSCF5678.RAF   →     ├── 2025-06 June/
+photo.heic          →      20251018_142006_photo.heic     →     │   └── 20250625_114810_DSCF5678.RAF
                                                                 └── 2025-10 October/
-                                                                    └── 20251018_142006_IMG_1234.jpg
+                                                                    ├── 20251018_142006_IMG_1234.jpg
                                                                     └── 20251018_142006_photo.heic
 ```
 
