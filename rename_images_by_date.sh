@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Script to rename image files based on EXIF DateTimeOriginal with timezone offset
-# Format: YYYYMMDD_hhmmss_PREFIX.<extension> (if original filename starts with uppercase prefix)
-# Supports JPEG, HEIC, MOV, MP4 and other image formats
+# Format: YYYYMMDD_hhmmss_<original_filename>.<extension>
+# Supports JPEG, HEIC, RAF, MOV and other image formats
 
 set -euo pipefail
 
@@ -23,8 +23,8 @@ usage() {
 Usage: $(basename "$0") DIRECTORY [OPTIONS]
 
 Rename image files based on EXIF DateTimeOriginal timestamp with timezone offset.
-Files are renamed to format: YYYYMMDD_hhmmss.<extension>
-If original filename starts with 1-5 uppercase letters (A-Z), they are appended as suffix.
+Files are renamed by prepending timestamp to existing filename: YYYYMMDD_hhmmss_<original>.<extension>
+Files already starting with timestamp pattern are skipped.
 
 ARGUMENTS:
     DIRECTORY       Directory containing images to rename (processes recursively)
@@ -44,10 +44,9 @@ EXAMPLES:
     $(basename "$0") ~/Pictures
 
     # Example transformations:
-    # DSCF0975.JPG -> 20230625_114810_DSCF.JPG
-    # IMG_1687.JPEG -> 20230607_090048_IMG.JPEG
-    # photo.jpg -> 20230607_090048.jpg (no prefix)
-    # 20230607_090048.jpg -> (skipped, already renamed)
+    # IMG_1234.jpg -> 20251018_142006_IMG_1234.jpg
+    # DSCF0975.RAF -> 20230625_114810_DSCF0975.RAF
+    # 20251018_142006.JPEG -> (skipped, already has timestamp)
 
 EOF
     exit 0
@@ -127,19 +126,6 @@ get_datetime_with_timezone() {
     return 0
 }
 
-# Function to extract uppercase prefix from filename (1-5 uppercase letters A-Z only)
-extract_uppercase_prefix() {
-    local filename="$1"
-    # Extract filename without extension
-    local basename="${filename%.*}"
-    # Check if basename starts with 1-5 uppercase letters (A-Z only, not a-z)
-    if [[ "$basename" =~ ^([A-Z]{1,5})([^A-Z].*|$) ]]; then
-        echo "${BASH_REMATCH[1]}"
-    else
-        echo ""
-    fi
-}
-
 # Function to generate new filename with duplicate handling
 generate_filename() {
     local dir="$1"
@@ -166,14 +152,13 @@ process_file() {
     local dir=$(dirname "$file")
     local filename=$(basename "$file")
     local extension="${filename##*.}"
+    local basename_no_ext="${filename%.*}"
     # Skip if file doesn't have an extension
     if [[ "$filename" == "$extension" ]]; then
-        echo -e "${YELLOW}[SKIP]${NC} $file - Filename has no extension"
         return 0
     fi
     # Check if filename already starts with timestamp - if so, skip entirely
     if filename_has_timestamp "$filename"; then
-        echo -e "${YELLOW}[SKIP]${NC} $file - Timestamp found at beginning of filename"
         return 0
     fi
     # Get DateTimeOriginal with timezone
@@ -190,13 +175,9 @@ process_file() {
     local hour="${datetime:11:2}"
     local minute="${datetime:14:2}"
     local second="${datetime:17:2}"
-    local base_name="${year}${month}${day}_${hour}${minute}${second}"
-    # Extract uppercase prefix from original filename
-    local prefix=$(extract_uppercase_prefix "$filename")
-    # If prefix exists, append it to base_name
-    if [[ -n "$prefix" ]]; then
-        base_name="${base_name}_${prefix}"
-    fi
+    local timestamp="${year}${month}${day}_${hour}${minute}${second}"
+    # Prepend timestamp to original filename (without extension)
+    local base_name="${timestamp}_${basename_no_ext}"
     # Generate unique filename if duplicate exists
     local new_filename=$(generate_filename "$dir" "$base_name" "$extension")
     # Skip if filename is already correct
@@ -263,7 +244,7 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 echo ""
 
-# Find all image files (JPEG, JPG, HEIC, RAF, mov) recursively
+# Find all image files (JPEG, JPG, HEIC, RAF, MOV) recursively
 file_count=0
 processed_count=0
 
