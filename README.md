@@ -5,7 +5,7 @@ A pair of bash scripts for macOS that work together to **rename** and **organise
 **Special support for Apple Live Photos** - automatically pairs images with their video counterparts using basename matching and ContentIdentifier validation.
 
 ## 🚨 WARNING ‼️
-> These scripts, and most of the README (except this section), were created by AI. They have been reviwed and tested, and they work ... for me, for my use-case, with my data, on my Mac. _Your Mileage May Vary_: meaning, it may be different for you. You are **strongly** advised to backup your data before use, include the `--dry-run` option at the beginning, and review the dry-run output before inputting valuable data. If it wasn't already clear: no warranty or liability is implied or accepted.
+> These scripts, and most of the README (except this section), were created by AI. They have been reviewed and tested, and they work ... for me, for my use-case, with my data, on my Mac. _Your Mileage May Vary_: meaning, it may be different for you. You are **strongly** advised to backup your data before use, include the `--dry-run` option at the beginning, and review the dry-run output before inputting valuable data. If it wasn't already clear: no warranty or liability is implied or accepted.
 
 ## 📦 What's Included
 
